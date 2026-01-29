@@ -1,5 +1,5 @@
 {
-  "name": "strrent-bot",
+  "name": "strrent-for-employees-bot",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "telegraf": "^4.12.3",
-    "axios": "^1.6.8"
+    "axios": "^1.6.8",
+    "express": "^4.18.2"
   }
 }
