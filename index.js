@@ -123,6 +123,7 @@ bot.on('callback_query', async (ctx) => {
       const result = response.data;
       if (result.success) {
         await ctx.answerCbQuery(`✅ Договор ${result.contract_id} создан!`);
+        ctx.session = {}; // 👈 полная очистка сессии
       } else {
         await ctx.answerCbQuery('❌ Ошибка при создании договора.');
       }
