@@ -18,9 +18,13 @@ scene.on('text', async (ctx) => {
   const inputCode = ctx.message.text.trim();
   const userId = ctx.from.id;
   const storedCode = ctx.session.twoFactorCode;
+  const expiresAt = ctx.session.codeExpiresAt;
+
+  if (!storedCode || Date.now() > expiresAt) {
+    return ctx.reply('⏳ Код истёк. Нажмите /start и попробуйте снова.');
+  }
 
   if (inputCode === storedCode) {
-    // Код верный — переходим к выбору типа
     await ctx.reply('✅ Верификация успешна!');
     await ctx.reply('Выберите тип оборудования:', {
       reply_markup: {
@@ -84,17 +88,19 @@ bot.hears('📄 Создать договор', async (ctx) => {
   const userId = ctx.from.id;
   if (!ALLOWED_IDS.includes(userId)) return;
 
-  // Генерируем 6-значный код
   const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = Date.now() + 60 * 1000; // 1 минута
+
   ctx.session.twoFactorCode = code;
+  ctx.session.codeExpiresAt = expiresAt;
 
   try {
     await send2FACode(userId, code);
-    await ctx.reply('📩 Код отправлен в личные сообщения от @strrent_2fa_bot.\nВведите его здесь:');
+    await ctx.reply('📩 Код отправлен от @strrent_2fa_bot.\nВведите его в течение 1 минуты:');
     return ctx.scene.enter('verifyCode');
   } catch (error) {
-    console.error('Ошибка отправки 2FA:', error.message);
-    return ctx.reply('⚠️ Не удалось отправить код. Проверьте, написали ли вы @strrent_2fa_bot хотя бы раз.');
+    console.error('Ошибка 2FA:', error.message);
+    return ctx.reply('⚠️ Не удалось отправить код. Убедитесь, что вы писали @strrent_2fa_bot.');
   }
 });
 
