@@ -55,9 +55,29 @@ bot.hears('📄 Создать договор', async (ctx) => {
 
 bot.on('callback_query', async (ctx) => {
   const data = ctx.update.callback_query.data;
+  const userId = ctx.from.id;
+
   if (data.startsWith('create_')) {
     const type = data.replace('create_', '');
-    await ctx.answerCbQuery(`✅ Договор ${type}-1 создан!`);
+
+    try {
+      const response = await axios.post(process.env.GOOGLE_SCRIPT_URL, {
+        type: type,
+        employee_id: userId
+      }, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const result = response.data;
+      if (result.success) {
+        await ctx.answerCbQuery(`✅ Договор ${result.contract_id} создан!`);
+      } else {
+        await ctx.answerCbQuery('❌ Ошибка при создании договора.');
+      }
+    } catch (error) {
+      console.error('Ошибка Google Apps Script:', error.message);
+      await ctx.answerCbQuery('⚠️ Не удалось сохранить договор.');
+    }
   }
 });
 
