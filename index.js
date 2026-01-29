@@ -109,6 +109,12 @@ bot.on('callback_query', async (ctx) => {
   const data = ctx.update.callback_query.data;
   const userId = ctx.from.id;
 
+  // Проверка: если нет активной сессии — игнорируем (защита от повторного нажатия)
+  if (!ctx.session || !ctx.session.twoFactorCode) {
+    await ctx.answerCbQuery('🔒 Сессия истекла. Начните заново с /start.');
+    return;
+  }
+
   if (data.startsWith('create_')) {
     const type = data.replace('create_', '');
 
@@ -122,14 +128,19 @@ bot.on('callback_query', async (ctx) => {
 
       const result = response.data;
       if (result.success) {
-        await ctx.answerCbQuery(`✅ Договор ${result.contract_id} создан!`);
-        ctx.session = {}; // 👈 полная очистка сессии
+        // Удаляем или редактируем сообщение с кнопками
+        await ctx.editMessageText(`✅ Договор ${result.contract_id} создан!`, {
+          reply_markup: { inline_keyboard: [] } // убираем кнопки
+        });
       } else {
         await ctx.answerCbQuery('❌ Ошибка при создании договора.');
       }
     } catch (error) {
       console.error('Ошибка Google Apps Script:', error.message);
       await ctx.answerCbQuery('⚠️ Не удалось сохранить договор.');
+    } finally {
+      // В ЛЮБОМ случае — сбрасываем сессию
+      ctx.session = {};
     }
   }
 });
