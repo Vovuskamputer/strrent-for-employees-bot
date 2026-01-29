@@ -1,11 +1,20 @@
 // index.js
 const { Telegraf } = require('telegraf');
 const axios = require('axios');
+const express = require('express');
+
+const app = express();
+const port = process.env.PORT || 3000;
 
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
 // Список разрешённых ID (добавь свой и других сотрудников через запятую)
 const ALLOWED_IDS = process.env.ADMIN_TELEGRAM_IDS.split(',').map(id => parseInt(id));
+
+// Health check endpoint — обязательно для Render
+app.get('/', (req, res) => {
+  res.send('✅ STRRENT Bot is running');
+});
 
 bot.command('start', (ctx) => {
   const userId = ctx.from.id;
@@ -23,7 +32,6 @@ bot.command('start', (ctx) => {
 
 bot.hears('📄 Создать договор', async (ctx) => {
   const userId = ctx.from.id;
-  // Здесь будет логика 2FA — пока упрощённо: сразу показываем типы
   await ctx.reply('Выберите тип оборудования:', {
     reply_markup: {
       inline_keyboard: [
@@ -47,15 +55,16 @@ bot.hears('📄 Создать договор', async (ctx) => {
 
 bot.on('callback_query', async (ctx) => {
   const data = ctx.update.callback_query.data;
-  const userId = ctx.from.id;
-
   if (data.startsWith('create_')) {
     const type = data.replace('create_', '');
-    // Пока просто отвечаем — позже подключим Google Script
     await ctx.answerCbQuery(`✅ Договор ${type}-1 создан!`);
   }
 });
 
-bot.launch().then(() => {
-  console.log('Бот запущен!');
+// Запуск бота + сервера
+app.listen(port, () => {
+  console.log(`HTTP сервер запущен на порту ${port}`);
+  bot.launch().then(() => {
+    console.log('🤖 Telegram бот запущен (polling)');
+  }).catch(console.error);
 });
